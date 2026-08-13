@@ -1,0 +1,26 @@
+cff-version: 1.2.0
+message: "If you use this software in your research or systems, please cite it as below."
+authors:
+  - family-names: "Prakash"
+    given-names: "Mrinal"
+title: "Reliable Job Queue with Dead-Letter Recovery"
+version: 0.1.0
+date-released: 2026-11-01
+url: "https://github.com/MRINALPRAKASHFSD/Job_Queue-"
+repository-code: "https://github.com/MRINALPRAKASHFSD/Job_Queue-"
+license: MIT
+keywords:
+  - "go"
+  - "golang"
+  - "postgresql"
+  - "distributed-systems"
+  - "job-queue"
+  - "background-jobs"
+  - "fault-tolerance"
+  - "idempotency"
+  - "dead-letter-queue"
+  - "concurrency"
+abstract: >-
+  A fault-tolerant distributed background job processing engine built with Go and
+  PostgreSQL, featuring durable queues, worker leases, exponential retries,
+  idempotent execution, and dead-letter recovery.

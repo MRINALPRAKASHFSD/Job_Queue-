@@ -1,0 +1,37 @@
+# Git metadata
+.git/
+.github/
+
+# Development environment configs
+.env
+.env.*
+!.env.example
+
+# Build and local binaries
+/bin/
+/dist/
+*.exe
+*.test
+*.out
+*.log
+
+# Vendor and workspace
+vendor/
+
+# Local databases and caches
+postgres-data/
+data/
+tmp/
+
+# Documentation and diagrams
+docs/
+*.md
+LICENSE
+NOTICE
+CITATION.cff
+
+# IDE and OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

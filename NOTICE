@@ -1,0 +1,35 @@
+Reliable Job Queue with Dead-Letter Recovery (reliable-job-engine)
+Copyright (c) 2026 Mrinal Prakash
+
+This product includes software developed by Mrinal Prakash and open-source contributors.
+
+========================================================================
+Third-Party Software and Component Attribution
+========================================================================
+
+This project relies on and interacts with standard open-source components
+and ecosystems under permissive licenses:
+
+1. Go Programming Language Standard Library
+   License: BSD 3-Clause License
+   Copyright (c) 2009 The Go Authors. All rights reserved.
+   https://golang.org/
+
+2. PostgreSQL Database Engine and Client Protocols
+   License: PostgreSQL License
+   Copyright (c) 1996-2026, The PostgreSQL Global Development Group
+   https://www.postgresql.org/
+
+3. Docker and Open Container Initiative (OCI) tooling
+   License: Apache License 2.0
+   Copyright (c) Docker, Inc. and OCI contributors.
+
+When third-party Go modules (such as database drivers or utility libraries)
+are imported into this repository, their licenses and notices are preserved
+in their respective vendor/module sources and documentation.
+
+========================================================================
+License Summary:
+- Project License: MIT License
+- SPDX-License-Identifier: MIT
+========================================================================
