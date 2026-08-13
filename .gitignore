@@ -1,0 +1,66 @@
+# Binaries and build artifacts
+/bin/
+/dist/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+/jobctl
+/server
+/worker
+
+# Test and coverage artifacts
+*.test
+*.out
+*.cov
+coverage.html
+profile.out
+
+# Go workspace and vendor
+vendor/
+go.work
+go.work.sum
+
+# Environment files and credentials (CRITICAL)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.pkcs12
+*.p12
+*.pfx
+*.cert
+*.crt
+id_rsa*
+
+# Local runtime logs and databases
+*.log
+*.sqlite
+*.db
+/data/
+/postgres-data/
+
+# Operating System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE and Editor configurations
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+*.sublime-project
+*.sublime-workspace
+
+# Temporary files and scratch scripts
+/tmp/
+*.tmp
+*.bak
