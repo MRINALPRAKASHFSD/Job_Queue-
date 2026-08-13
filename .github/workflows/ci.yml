@@ -1,0 +1,144 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint-and-validate:
+    name: Code Quality & Static Analysis
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Verify Go module dependencies
+        run: |
+          go mod verify
+
+      - name: Check code formatting (gofmt)
+        run: |
+          DIFF=$(gofmt -s -d .)
+          if [ -n "$DIFF" ]; then
+            echo "Error: Unformatted Go code detected:"
+            echo "$DIFF"
+            echo "Please run 'gofmt -s -w .' locally and commit."
+            exit 1
+          fi
+
+      - name: Static Analysis (go vet)
+        run: |
+          go vet ./...
+
+  unit-tests:
+    name: Unit Tests & Race Detection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Run unit tests with race detector
+        run: |
+          go test -race -v -coverprofile=coverage.out ./internal/... ./tests/unit/...
+
+      - name: Check test binary compilation
+        run: |
+          go test -c -race ./internal/retry -o /dev/null
+
+  integration-tests:
+    name: PostgreSQL Integration Tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_job_engine
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U test_user -d test_job_engine"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Apply Database Migrations
+        env:
+          PGPASSWORD: test_password
+        run: |
+          sudo apt-get update && sudo apt-get install -y postgresql-client
+          psql -h localhost -p 5432 -U test_user -d test_job_engine -f migrations/000001_init_schema.up.sql
+
+      - name: Verify PostgreSQL Schema Tables
+        env:
+          PGPASSWORD: test_password
+        run: |
+          echo "==> Verifying created tables in test database..."
+          psql -h localhost -p 5432 -U test_user -d test_job_engine -c "\dt"
+          psql -h localhost -p 5432 -U test_user -d test_job_engine -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';"
+
+      - name: Run Integration Tests with Race Detector
+        env:
+          DATABASE_URL: postgres://test_user:test_password@localhost:5432/test_job_engine?sslmode=disable
+        run: |
+          go test -race -v -tags=integration ./tests/integration/...
+
+  build-validation:
+    name: Build Binaries
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Go toolchain
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.24'
+          check-latest: true
+          cache: true
+
+      - name: Compile all binaries
+        run: |
+          mkdir -p bin
+          CGO_ENABLED=0 go build -v -o bin/server ./cmd/server
+          CGO_ENABLED=0 go build -v -o bin/worker ./cmd/worker
+          CGO_ENABLED=0 go build -v -o bin/jobctl ./cmd/cli
+
+      - name: Verify built binaries
+        run: |
+          test -f bin/server
+          test -f bin/worker
+          test -f bin/jobctl
+          ls -lh bin/
