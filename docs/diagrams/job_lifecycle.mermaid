@@ -1,0 +1,44 @@
+stateDiagram-v2
+    [*] --> pending: Enqueued by Producer (immediate or scheduled)
+    
+    pending --> leased: Claimed by Worker via SELECT FOR UPDATE SKIP LOCKED
+    note right of leased
+        Lease deadline set (NOW() + 30s)
+        Fencing token incremented
+        Periodic heartbeats sent
+    end note
+
+    leased --> completed: Execution Succeeded
+    note right of completed
+        state = 'completed'
+        Audit record written
+        Lease released
+    end note
+
+    leased --> failed: Transient Execution Error
+    note right of failed
+        attempt < max_attempts
+        Exponential backoff + Full Jitter calculated
+        scheduled_at set to future timestamp
+    end note
+
+    failed --> pending: Delay Expired (scheduled_at <= NOW())
+
+    leased --> dead_letter: Exhausted Retries (attempt >= max_attempts) OR Poison Pill
+    note right of dead_letter
+        Moved to dead_letter_jobs
+        Stack trace & error logged
+        Quarantined for operator review
+    end note
+
+    leased --> pending: Lease Expired (Worker Crash / Partition / Reaper)
+    note right of pending
+        lease_expires_at < NOW()
+        Watchdog reaper detects expiration
+        Fencing token incremented
+        Zombie worker writes blocked
+    end note
+
+    dead_letter --> pending: Operator Manual Replay (jobctl dlq replay)
+
+    completed --> [*]
