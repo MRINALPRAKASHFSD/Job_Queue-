@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security Vulnerability Reporting
+    url: https://github.com/MRINALPRAKASHFSD/Job_Queue-/security/advisories/new
+    about: Please report security vulnerabilities privately according to SECURITY.md.
+  - name: Questions and Architectural Discussions
+    url: https://github.com/MRINALPRAKASHFSD/Job_Queue-/discussions
+    about: Ask questions or discuss design ideas with the maintainer and community.
