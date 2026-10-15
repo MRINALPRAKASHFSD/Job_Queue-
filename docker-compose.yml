@@ -1,0 +1,81 @@
+version: "3.8"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: reliable_job_engine_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres_password_placeholder}
+      POSTGRES_DB: ${DB_NAME:-reliable_job_engine}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/01_init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres} -d ${DB_NAME:-reliable_job_engine}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - job_engine_net
+
+  server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGET_BIN: server
+    container_name: reliable_job_engine_server
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - APP_ENV=development
+      - SERVER_HOST=0.0.0.0
+      - SERVER_PORT=8080
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_password_placeholder}
+      - DB_NAME=${DB_NAME:-reliable_job_engine}
+      - DB_SSLMODE=disable
+    ports:
+      - "8080:8080"
+    networks:
+      - job_engine_net
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        TARGET_BIN: worker
+    container_name: reliable_job_engine_worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - APP_ENV=development
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=${DB_USER:-postgres}
+      - DB_PASSWORD=${DB_PASSWORD:-postgres_password_placeholder}
+      - DB_NAME=${DB_NAME:-reliable_job_engine}
+      - DB_SSLMODE=disable
+      - WORKER_CONCURRENCY=5
+    networks:
+      - job_engine_net
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  job_engine_net:
+    driver: bridge
