@@ -1,0 +1,56 @@
+flowchart TD
+    subgraph Producers ["Producers (Microservices / Web APIs)"]
+        P1["Direct Database Enqueue (ACID Tx)"]
+        P2["HTTP Enqueue Endpoint (cmd/server)"]
+    end
+
+    subgraph PostgreSQL ["PostgreSQL Database Engine (ACID Store)"]
+        subgraph Tables ["Durable Storage & Invariants"]
+            Q["jobs (State: pending, Priority, Scheduled_at)"]
+            L["jobs (State: leased, Lease_Expires_at, Fencing_Token)"]
+            A["job_executions (Audit Log)"]
+            DLQ["dead_letter_jobs (Quarantine)"]
+            IDEM["idempotency_keys (Deduplication Store)"]
+        end
+        LOCK["SELECT ... FOR UPDATE SKIP LOCKED"]
+    end
+
+    subgraph WorkerFleet ["Worker Fleet (cmd/worker)"]
+        W1["Worker Node 1"]
+        W2["Worker Node 2"]
+        WN["Worker Node N"]
+        subgraph Daemons ["Background Processes"]
+            HB["Heartbeat Lease Renewal Daemon"]
+            REAP["Reaper / Crash Recovery Daemon"]
+        end
+    end
+
+    subgraph Monitoring ["Observability & Administration"]
+        CLI["jobctl CLI (cmd/cli)"]
+        PROM["Prometheus Metrics (/metrics)"]
+        LOGS["Structured JSON Logs (slog)"]
+    end
+
+    P1 -->|"INSERT INTO jobs"| Q
+    P2 -->|"POST /api/v1/jobs"| Q
+    P1 -.->|"Deduplication Guard"| IDEM
+
+    Q --> LOCK
+    LOCK -->|"Claim Batch"| W1
+    LOCK -->|"Claim Batch"| W2
+    LOCK -->|"Claim Batch"| WN
+
+    W1 <-->|"Heartbeat Renew"| L
+    W2 <-->|"Heartbeat Renew"| L
+    WN <-->|"Heartbeat Renew"| L
+
+    REAP -->|"Reap Expired Leases"| L
+    REAP -->|"Reset to pending"| Q
+
+    W1 -->|"Success / Completed"| A
+    W1 -->|"Retry Exhausted / DLQ"| DLQ
+
+    CLI -->|"Inspect / Replay"| DLQ
+    CLI -->|"Queue Status"| Q
+    WorkerFleet --> PROM
+    WorkerFleet --> LOGS
