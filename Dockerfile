@@ -33,7 +33,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
 # ==============================================================================
 # Stage 2: Minimal runtime image
 # ==============================================================================
-FROM alpine:3.20 AS runner
+FROM alpine:3.24 AS runner
 
 # Create non-root unprivileged user and group
 RUN addgroup -g 10001 -S appgroup && \
